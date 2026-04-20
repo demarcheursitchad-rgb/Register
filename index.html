@@ -47,6 +47,26 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+body.light-mode {
+  --bg: #f5f5f7;
+  --bg2: #ffffff;
+  --bg3: #f4f5f7;
+  --border: rgba(15,23,42,0.08);
+  --border2: rgba(15,23,42,0.12);
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #64748b;
+  --gold: #b45309;
+  --gold2: #f59e0b;
+  --green: #16a34a;
+  --green-bg: rgba(16,163,127,0.12);
+  --red: #dc2626;
+  --red-bg: rgba(248,113,113,0.15);
+  --amber: #d97706;
+  --amber-bg: rgba(250,204,21,0.12);
+  --blue: #2563eb;
+  --blue-bg: rgba(59,130,246,0.12);
+}
 
 /* ── LAYOUT ────────────────────────────────────────────────────── */
 #app { display: none; }
@@ -80,7 +100,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .auth-box button:hover { opacity: 0.85; }
 .auth-err { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
 
-
+/* ── SETUP BANNER ──────────────────────────────────────────────── */
+#setup-banner {
+  background: var(--amber-bg); border-bottom: 0.5px solid var(--amber);
+  padding: 12px 20px; font-size: 13px; color: var(--amber);
+  display: none; text-align: center;
+}
+#setup-banner a { color: var(--gold2); text-decoration: underline; }
 
 /* ── TOPBAR ────────────────────────────────────────────────────── */
 .topbar {
@@ -343,12 +369,17 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   </div>
 </div>
 
+<!-- SETUP BANNER -->
+<div id="setup-banner">
+  ⚠️ <strong>Configuration requise :</strong> Remplace les valeurs SUPABASE_URL et SUPABASE_KEY dans le code.
+  <a href="#" onclick="goTo('config')">Voir la configuration</a>
+</div>
 
 <!-- MAIN APP -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="logo">Présence Pro</div>
+      <div class="logo" onclick="goTo('dashboard')" style="cursor:pointer;">Présence Pro</div>
       <nav class="nav">
         <button class="nav-btn active" onclick="goTo('dashboard')">Dashboard</button>
         <button class="nav-btn" onclick="goTo('pointer')">Pointage</button>
@@ -356,9 +387,11 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <button class="nav-btn" onclick="goTo('employes')">Employés</button>
         <button class="nav-btn" onclick="goTo('historique')">Historique</button>
         <button class="nav-btn" onclick="goTo('absences')">Absences</button>
+        <button class="nav-btn" onclick="goTo('config')">Config</button>
       </nav>
       <div class="topbar-right">
         <div class="clock-pill" id="topClock">--:--:--</div>
+        <button class="btn sm" id="themeToggleBtn" onclick="toggleTheme()">Mode clair</button>
         <button class="logout-btn" onclick="logout()">Déconnexion</button>
       </div>
     </div>
@@ -368,6 +401,10 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <div class="panel active" id="panel-dashboard">
     <div class="container">
       <div class="stats-grid" id="statsGrid"></div>
+      <div class="card">
+        <div class="card-title">Classement ponctualité</div>
+        <div id="punctualityWidget" style="display:grid;gap:12px;"></div>
+      </div>
       <div class="card">
         <div class="card-title">Présences du jour <span id="todayDateLabel"></span></div>
         <div class="tbl-wrap">
@@ -449,8 +486,16 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <div class="card-title">Ajouter un employé</div>
         <div class="form-grid" style="margin-bottom:12px;">
           <div class="fg"><label>Nom complet</label><input type="text" id="empNom" placeholder="Abakar Mahamat"></div>
-          <div class="fg"><label>Poste</label><input type="text" id="empPoste" placeholder="Comptabilité"></div>
-          <div class="fg"><label>Département</label><input type="text" id="empDept" placeholder="Finance"></div>
+          <div class="fg">
+            <label>Poste</label>
+            <select id="empPosteSelect" onchange="toggleCustomField('empPosteSelect','empPosteCustom')"></select>
+            <input type="text" id="empPosteCustom" placeholder="Entrer un poste" style="display:none;margin-top:8px;">
+          </div>
+          <div class="fg">
+            <label>Département</label>
+            <select id="empDeptSelect" onchange="toggleCustomField('empDeptSelect','empDeptCustom')"></select>
+            <input type="text" id="empDeptCustom" placeholder="Entrer un département" style="display:none;margin-top:8px;">
+          </div>
           <div class="fg"><label>Heure d'arrivée prévue</label><input type="time" id="empHeure" value="08:00"></div>
         </div>
         <div class="btn-row"><button class="btn primary" onclick="ajouterEmploye()">Ajouter l'employé</button></div>
@@ -524,7 +569,28 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
   </div>
 
-  
+  <!-- CONFIG -->
+  <div class="panel" id="panel-config">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">Postes</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="fg"><label>Ajouter un poste</label><input type="text" id="newPoste" placeholder="Ex: Comptabilité"></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" onclick="ajouterOption('postes')">Ajouter poste</button></div>
+        <div id="posteList" style="margin-top:18px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Départements</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="fg"><label>Ajouter un département</label><input type="text" id="newDept" placeholder="Ex: Finance"></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" onclick="ajouterOption('departements')">Ajouter département</button></div>
+        <div id="deptList" style="margin-top:18px;"></div>
+      </div>
+    </div>
+  </div>
+
 
 <!-- MODAL SUPPRESSION -->
 <div class="modal-bg" id="modalDel">
@@ -540,6 +606,31 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   </div>
 </div>
 
+<!-- MODAL ÉDITION EMPLOYÉ -->
+<div class="modal-bg" id="modalEdit">
+  <div class="modal">
+    <div class="modal-title">Modifier un employé</div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="fg"><label>Nom complet</label><input type="text" id="empEditNom"></div>
+      <div class="fg">
+        <label>Poste</label>
+        <select id="empEditPosteSelect" onchange="toggleCustomField('empEditPosteSelect','empEditPosteCustom')"></select>
+        <input type="text" id="empEditPosteCustom" placeholder="Entrer un poste" style="display:none;margin-top:8px;">
+      </div>
+      <div class="fg">
+        <label>Département</label>
+        <select id="empEditDeptSelect" onchange="toggleCustomField('empEditDeptSelect','empEditDeptCustom')"></select>
+        <input type="text" id="empEditDeptCustom" placeholder="Entrer un département" style="display:none;margin-top:8px;">
+      </div>
+      <div class="fg"><label>Heure d'arrivée prévue</label><input type="time" id="empEditHeure"></div>
+    </div>
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn primary" onclick="enregistrerEdition()">Enregistrer</button>
+      <button class="btn" onclick="document.getElementById('modalEdit').classList.remove('open')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -548,7 +639,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 // ══════════════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://fbmlkzhigrloyfncdzbj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_eU_S96F7ut7qPPWB7N1fDg_HwTOqmY3';
-const APP_URL      = 'https://ton-register.netlify.app';
+const APP_URL      = 'https://ton-registre.netlify.app';
 const SECRET_KEY   = 'change-moi-secret-unique-2024';
 
 // Heure d'arrivée par défaut (retard si dépassée de 15 min)
@@ -731,6 +822,142 @@ async function dbDeleteEmploye(id) {
   saveLocal();
 }
 
+function loadOptionList(key) {
+  return JSON.parse(localStorage.getItem('rp2_' + key) || '[]');
+}
+
+function saveOption(key, value) {
+  if (!value) return;
+  const list = loadOptionList(key);
+  if (list.includes(value)) return;
+  list.unshift(value);
+  if (list.length > 20) list.length = 20;
+  localStorage.setItem('rp2_' + key, JSON.stringify(list));
+}
+
+function populateOptionSelect(el, items, label) {
+  if (!el) return;
+  const options = [`<option value="">— ${label} —</option>`, `<option value="__autre__">Ajouter...</option>`];
+  items.forEach(item => options.push(`<option value="${item}">${item}</option>`));
+  el.innerHTML = options.join('');
+}
+
+function getChosenOption(selectId, customId) {
+  const select = document.getElementById(selectId);
+  const custom = document.getElementById(customId);
+  if (!select) return '';
+  if (select.value === '__autre__') return custom?.value.trim() || '';
+  return select.value;
+}
+
+function toggleCustomField(selectId, customId) {
+  const select = document.getElementById(selectId);
+  const custom = document.getElementById(customId);
+  if (!select || !custom) return;
+  if (select.value === '__autre__') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+  }
+}
+
+async function dbUpdateEmploye(id, patch) {
+  if (IS_CONFIGURED && db) {
+    const { error } = await db.from('employes').update(patch).eq('id', id);
+    if (error) throw error;
+    return;
+  }
+  const emp = _employes.find(e => e.id === id);
+  if (emp) {
+    Object.assign(emp, patch);
+    saveLocal();
+  }
+}
+
+let _editingId = null;
+
+async function editerEmploye(id) {
+  const employes = await dbGetEmployes();
+  const emp = employes.find(e => e.id === id);
+  if (!emp) return;
+  _editingId = id;
+  populateOptionSelect(document.getElementById('empEditPosteSelect'), loadOptionList('postes'), 'Poste');
+  populateOptionSelect(document.getElementById('empEditDeptSelect'), loadOptionList('departements'), 'Département');
+  document.getElementById('empEditNom').value = emp.nom || '';
+  document.getElementById('empEditHeure').value = emp.heure_arrivee || emp.heure || '08:00';
+  if (emp.poste && loadOptionList('postes').includes(emp.poste)) {
+    document.getElementById('empEditPosteSelect').value = emp.poste;
+    document.getElementById('empEditPosteCustom').style.display = 'none';
+    document.getElementById('empEditPosteCustom').value = '';
+  } else {
+    document.getElementById('empEditPosteSelect').value = '__autre__';
+    document.getElementById('empEditPosteCustom').style.display = 'block';
+    document.getElementById('empEditPosteCustom').value = emp.poste || '';
+  }
+  if (emp.departement && loadOptionList('departements').includes(emp.departement)) {
+    document.getElementById('empEditDeptSelect').value = emp.departement;
+    document.getElementById('empEditDeptCustom').style.display = 'none';
+    document.getElementById('empEditDeptCustom').value = '';
+  } else {
+    document.getElementById('empEditDeptSelect').value = '__autre__';
+    document.getElementById('empEditDeptCustom').style.display = 'block';
+    document.getElementById('empEditDeptCustom').value = emp.departement || '';
+  }
+  document.getElementById('modalEdit').classList.add('open');
+}
+
+async function enregistrerEdition() {
+  if (!_editingId) return;
+  const nom = document.getElementById('empEditNom').value.trim();
+  const poste = getChosenOption('empEditPosteSelect', 'empEditPosteCustom');
+  const dept = getChosenOption('empEditDeptSelect', 'empEditDeptCustom');
+  const heure = document.getElementById('empEditHeure').value || '08:00';
+  if (!nom) { toast('Nom requis', 'err'); return; }
+  if (!poste) { toast('Poste requis', 'err'); return; }
+  if (!dept) { toast('Département requis', 'err'); return; }
+  saveOption('postes', poste);
+  saveOption('departements', dept);
+  await dbUpdateEmploye(_editingId, { nom, poste, departement: dept, heure_arrivee: heure });
+  document.getElementById('modalEdit').classList.remove('open');
+  toast('Employé mis à jour');
+  renderEmployes();
+  refreshSelects();
+  renderQR();
+  renderDashboard();
+}
+
+function partagerQR(id, nom) {
+  const url = qrUrl({ id });
+  const message = `QR de pointage pour ${nom} : ${url}`;
+  if (navigator.share) {
+    navigator.share({ title: 'QR Pointage', text: message, url });
+  } else {
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank');
+  }
+}
+
+function applyTheme(theme) {
+  const body = document.body;
+  body.classList.toggle('light-mode', theme === 'light');
+  body.classList.toggle('dark-mode', theme !== 'light');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'light' ? 'Mode sombre' : 'Mode clair';
+  localStorage.setItem('rp2_theme', theme);
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('rp2_theme') || 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+
+function initTheme() {
+  const theme = localStorage.getItem('rp2_theme') || 'dark';
+  applyTheme(theme);
+}
+
 // ── AUTH ─────────────────────────────────────────────────────────
 async function checkAuth() {
   if (!IS_CONFIGURED) return true; // mode démo
@@ -782,9 +1009,14 @@ function goTo(id) {
 async function renderDashboard() {
   const auj = todayStr();
   document.getElementById('todayDateLabel').textContent = JOURS[new Date().getDay()] + ' ' + new Date().getDate() + ' ' + MOIS[new Date().getMonth()];
-  const [employes, pointagesAuj] = await Promise.all([
+  const semaine = new Date(); semaine.setDate(semaine.getDate() - 6);
+  const weekStart = semaine.toISOString().split('T')[0];
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const [employes, pointagesAuj, pointagesWeek, pointagesMonth] = await Promise.all([
     dbGetEmployes(),
-    dbGetPointages({ date: auj })
+    dbGetPointages({ date: auj }),
+    dbGetPointages({ du: weekStart, au: auj }),
+    dbGetPointages({ du: monthStart, au: auj })
   ]);
 
   const retards = pointagesAuj.filter(p => {
@@ -798,6 +1030,47 @@ async function renderDashboard() {
     <div class="stat"><div class="lbl">Partis</div><div class="val">${pointagesAuj.filter(p => p.depart).length}</div><div class="sub">départ enregistré</div></div>
     <div class="stat"><div class="lbl">Retards</div><div class="val">${retards.length}</div><div class="sub">arrivée tardive</div></div>
     <div class="stat"><div class="lbl">Absents</div><div class="val">${Math.max(0, employes.length - pointagesAuj.length)}</div><div class="sub">non pointés</div></div>
+  `;
+
+  const punctuality = employes.map(emp => {
+    const weekPts = pointagesWeek.filter(p => (p.employe_id || p.empId) === emp.id && p.arrivee);
+    const monthPts = pointagesMonth.filter(p => (p.employe_id || p.empId) === emp.id && p.arrivee);
+    const weekOnTime = weekPts.filter(p => {
+      const limite = heureToMin(emp?.heure_arrivee || emp?.heure || HEURE_LIMITE_DEFAULT) + 15;
+      return heureToMin(p.arrivee.slice(0,5)) <= limite;
+    }).length;
+    const monthOnTime = monthPts.filter(p => {
+      const limite = heureToMin(emp?.heure_arrivee || emp?.heure || HEURE_LIMITE_DEFAULT) + 15;
+      return heureToMin(p.arrivee.slice(0,5)) <= limite;
+    }).length;
+    return {
+      emp,
+      weekRate: weekPts.length ? Math.round(weekOnTime / weekPts.length * 100) : 0,
+      monthRate: monthPts.length ? Math.round(monthOnTime / monthPts.length * 100) : 0,
+      weekCount: weekPts.length,
+      monthCount: monthPts.length,
+    };
+  });
+
+  const topWeek = [...punctuality].sort((a,b) => b.weekRate - a.weekRate || b.weekCount - a.weekCount).slice(0, 3);
+  const topMonth = [...punctuality].sort((a,b) => b.monthRate - a.monthRate || b.monthCount - a.monthCount).slice(0, 3);
+  document.getElementById('punctualityWidget').innerHTML = `
+    <div style="display:grid;gap:14px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong>Cette semaine</strong><span style="font-size:12px;color:var(--text2);">Top 3 ponctualité</span></div>
+        ${topWeek.map((item, idx) => `<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <div style="display:flex;gap:10px;align-items:center;"><div class="avatar" style="background:${empColor(idx).bg};color:${empColor(idx).txt};width:30px;height:30px;font-size:11px;">${initials(item.emp.nom)}</div><div><strong style="font-size:13px;">${item.emp.nom}</strong><div style="font-size:11px;color:var(--text2);">${item.weekCount} pointages</div></div></div>
+          <div style="min-width:120px;"><div class="prog-bar"><div class="prog-fill" style="width:${item.weekRate}%;background:var(--green);"></div></div><div style="font-size:11px;color:var(--text2);text-align:right;">${item.weekRate}%</div></div>
+        </div>`).join('')}
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong>Ce mois</strong><span style="font-size:12px;color:var(--text2);">Champion ponctuel</span></div>
+        ${topMonth.map((item, idx) => `<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <div style="display:flex;gap:10px;align-items:center;"><div class="avatar" style="background:${empColor(idx+3).bg};color:${empColor(idx+3).txt};width:30px;height:30px;font-size:11px;">${initials(item.emp.nom)}</div><div><strong style="font-size:13px;">${item.emp.nom}</strong><div style="font-size:11px;color:var(--text2);">${item.monthCount} pointages</div></div></div>
+          <div style="min-width:120px;"><div class="prog-bar"><div class="prog-fill" style="width:${item.monthRate}%;background:var(--blue);"></div></div><div style="font-size:11px;color:var(--text2);text-align:right;">${item.monthRate}%</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
   `;
 
   const tbody = document.getElementById('todayTbody');
@@ -896,8 +1169,9 @@ async function renderQR() {
       <div class="qr-box" id="qr-${e.id}"></div>
       <div class="qr-token">Token : ${token}</div>
       <div class="qr-expires">${expiry}</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
         <button class="btn sm" onclick="imprimerQR('${e.id}','${e.nom}','${e.poste||''}')">Imprimer</button>
+        <button class="btn sm" onclick="partagerQR('${e.id}','${e.nom}')">Partager</button>
       </div>
     </div>`;
   }).join('');
@@ -969,13 +1243,23 @@ let _deletingId = null;
 
 async function ajouterEmploye() {
   const nom = document.getElementById('empNom').value.trim();
-  const poste = document.getElementById('empPoste').value.trim();
-  const dept = document.getElementById('empDept').value.trim();
+  const poste = getChosenOption('empPosteSelect', 'empPosteCustom');
+  const dept = getChosenOption('empDeptSelect', 'empDeptCustom');
   const heure = document.getElementById('empHeure').value || '08:00';
   if (!nom) { toast('Nom requis', 'err'); return; }
+  if (!poste) { toast('Poste requis', 'err'); return; }
+  if (!dept) { toast('Département requis', 'err'); return; }
   try {
+    saveOption('postes', poste);
+    saveOption('departements', dept);
     await dbInsertEmploye({ nom, poste, departement: dept, heure_arrivee: heure, actif: true });
-    ['empNom','empPoste','empDept'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('empNom').value = '';
+    document.getElementById('empPosteSelect').value = '';
+    document.getElementById('empPosteCustom').value = '';
+    document.getElementById('empDeptSelect').value = '';
+    document.getElementById('empDeptCustom').value = '';
+    document.getElementById('empPosteCustom').style.display = 'none';
+    document.getElementById('empDeptCustom').style.display = 'none';
     toast(nom + ' ajouté');
     renderEmployes();
     refreshSelects();
@@ -997,7 +1281,10 @@ async function renderEmployes() {
         <div style="font-size:14px;font-weight:600;">${e.nom}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px;">${e.poste || '—'} ${e.departement ? '· ' + e.departement : ''} · Arrivée ${e.heure_arrivee || e.heure || '08:00'}</div>
       </div>
-      <button class="btn sm danger" onclick="demanderSupprimer('${e.id}')">Supprimer</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn sm" onclick="editerEmploye('${e.id}')">Modifier</button>
+        <button class="btn sm danger" onclick="demanderSupprimer('${e.id}')">Supprimer</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1032,6 +1319,47 @@ async function refreshSelects() {
     });
     s.value = cur;
   });
+  const postes = loadOptionList('postes');
+  const depts = loadOptionList('departements');
+  populateOptionSelect(document.getElementById('empPosteSelect'), postes, 'Poste');
+  populateOptionSelect(document.getElementById('empDeptSelect'), depts, 'Département');
+  populateOptionSelect(document.getElementById('empEditPosteSelect'), postes, 'Poste');
+  populateOptionSelect(document.getElementById('empEditDeptSelect'), depts, 'Département');
+  renderConfig();
+}
+
+function renderConfig() {
+  const postes = loadOptionList('postes');
+  const depts = loadOptionList('departements');
+  const posteList = document.getElementById('posteList');
+  const deptList = document.getElementById('deptList');
+  if (posteList) {
+    posteList.innerHTML = postes.length
+      ? postes.map(item => `<div class="info-row"><span>${item}</span><button class="btn sm danger" onclick="supprimerOption('postes','${item.replace(/'/g,"\\'")}')">Supprimer</button></div>`).join('')
+      : '<div class="empty">Aucun poste ajouté</div>';
+  }
+  if (deptList) {
+    deptList.innerHTML = depts.length
+      ? depts.map(item => `<div class="info-row"><span>${item}</span><button class="btn sm danger" onclick="supprimerOption('departements','${item.replace(/'/g,"\\'")}')">Supprimer</button></div>`).join('')
+      : '<div class="empty">Aucun département ajouté</div>';
+  }
+}
+
+function ajouterOption(key) {
+  const inputId = key === 'postes' ? 'newPoste' : 'newDept';
+  const value = document.getElementById(inputId).value.trim();
+  if (!value) { toast('Valeur requise', 'err'); return; }
+  saveOption(key, value);
+  document.getElementById(inputId).value = '';
+  refreshSelects();
+  toast((key === 'postes' ? 'Poste' : 'Département') + ' ajouté');
+}
+
+function supprimerOption(key, value) {
+  const list = loadOptionList(key).filter(item => item !== value);
+  localStorage.setItem('rp2_' + key, JSON.stringify(list));
+  refreshSelects();
+  toast((key === 'postes' ? 'Poste' : 'Département') + ' supprimé');
 }
 
 // ── HISTORIQUE ────────────────────────────────────────────────────
@@ -1280,6 +1608,7 @@ function showApp() {
 }
 
 async function init() {
+  initTheme();
   // Détecter mode scan QR
   const params = new URLSearchParams(window.location.search);
   if (params.get('t') && params.get('e')) {
