@@ -80,13 +80,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .auth-box button:hover { opacity: 0.85; }
 .auth-err { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
 
-/* ── SETUP BANNER ──────────────────────────────────────────────── */
-#setup-banner {
-  background: var(--amber-bg); border-bottom: 0.5px solid var(--amber);
-  padding: 12px 20px; font-size: 13px; color: var(--amber);
-  display: none; text-align: center;
-}
-#setup-banner a { color: var(--gold2); text-decoration: underline; }
+
 
 /* ── TOPBAR ────────────────────────────────────────────────────── */
 .topbar {
@@ -349,11 +343,6 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   </div>
 </div>
 
-<!-- SETUP BANNER -->
-<div id="setup-banner">
-  ⚠️ <strong>Configuration requise :</strong> Remplace les valeurs SUPABASE_URL et SUPABASE_KEY dans le code.
-  <a href="#" onclick="goTo('config')">Voir la configuration</a>
-</div>
 
 <!-- MAIN APP -->
 <div id="app">
@@ -367,7 +356,6 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <button class="nav-btn" onclick="goTo('employes')">Employés</button>
         <button class="nav-btn" onclick="goTo('historique')">Historique</button>
         <button class="nav-btn" onclick="goTo('absences')">Absences</button>
-        <button class="nav-btn" onclick="goTo('config')">Config</button>
       </nav>
       <div class="topbar-right">
         <div class="clock-pill" id="topClock">--:--:--</div>
